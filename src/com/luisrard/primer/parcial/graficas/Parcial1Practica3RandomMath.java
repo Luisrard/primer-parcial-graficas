@@ -1,13 +1,13 @@
 package com.luisrard.primer.parcial.graficas;
 
-public class Parcial1Practica2RandomMath {
+public class Parcial1Practica3RandomMath {
     public static void main(String[] args) {
-        int a = generateRandomNumber();
-        int b = generateRandomNumber();
+        double a = generateRandomNumber();
+        double b = generateRandomNumber();
         validateBiggerNumber(a,b);
     }
 
-    private static void validateBiggerNumber(int a, int b) {
+    private static void validateBiggerNumber(double a, double b) {
         System.out.println("A = " + a);
         System.out.println("B = " + b);
         if (a == b){
@@ -19,7 +19,7 @@ public class Parcial1Practica2RandomMath {
         }
     }
 
-    private static int generateRandomNumber() {
-        return (int) (1000 * Math.random());
+    private static double generateRandomNumber() {
+        return Math.random();
     }
 }
