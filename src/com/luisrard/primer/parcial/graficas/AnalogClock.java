@@ -2,6 +2,7 @@ package com.luisrard.primer.parcial.graficas;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
 import java.time.LocalDateTime;
 
 public class AnalogClock extends JFrame implements Runnable{
@@ -69,8 +70,6 @@ public class AnalogClock extends JFrame implements Runnable{
         }
         g.drawImage(bufferMin, 0, 0, this);
         sec = time.getSecond();
-        g.drawArc(100, 100, 50, 50, 0, 90);
-        g.drawArc(100, 100, 50, 50, 180, 10);
         g.fillArc((getWidth() - 100) / 2 + 5, (getHeight() - 100) / 2 + 5, 90, 90, angle60(sec),2);
     }
 

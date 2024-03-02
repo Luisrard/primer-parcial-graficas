@@ -75,7 +75,7 @@ public class Parcial1Practica8EspiralArquimedes extends JFrame implements Runnab
     }
 
     @Override
-    public void paint(Graphics g) {
+    public void update(Graphics g) {
         if (!pause) {
             g.setColor(color);
             painting = true;
@@ -135,7 +135,7 @@ public class Parcial1Practica8EspiralArquimedes extends JFrame implements Runnab
                         Thread.sleep(DELAY);
                     } catch (InterruptedException e) {
                     }
-                    repaint();
+                    update(getGraphics());
                 }
             }
         }
