@@ -1,17 +1,17 @@
 package com.luisrard.primer.parcial.graficas;
 
 import javax.swing.*;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.time.LocalDateTime;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
-public class AnalogClock extends JFrame implements Runnable{
-    private Image backGround;
-    private Image bufferMin;
-    private Image bufferHour;
-    int min = -1;
-    int hour = -1;
-    int sec = -1;
+public class AnalogClock extends JFrame implements Runnable, ActionListener {
+    private final JLabel status;
+    private boolean ready = false;
+    private AnalogClockPanel clockPanel;
+
     public static void main(String[] args) {
         AnalogClock analogClock = new AnalogClock();
         new Thread(analogClock).start();
@@ -19,11 +19,20 @@ public class AnalogClock extends JFrame implements Runnable{
 
     @Override
     public void run() {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException ignored) {}
         while (true){
             try {
-                Thread.sleep(1000);
+                Thread.sleep(1);
             } catch (InterruptedException ignored) {}
-            repaint();
+            paintWorkArea();
+        }
+    }
+
+    private void paintWorkArea() {
+        if (ready){
+            clockPanel.paintWorkArea();
         }
     }
 
@@ -31,53 +40,65 @@ public class AnalogClock extends JFrame implements Runnable{
         super("Little Clock");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
-        setSize(400,400);
+        setSize(480,520);
         setVisible(true);
+
+        JMenuBar menuBar = new JMenuBar();
+        //menu Modificar
+        JMenu menuArchivo = new JMenu("Modificar");
+
+        //opcion Nuevo
+        JMenuItem opcionNuevo = new JMenuItem("Nuevo", 'N');
+        opcionNuevo.addActionListener(this);
+        opcionNuevo.setActionCommand("Nuevo");
+        menuArchivo.add(opcionNuevo);
+
+        menuArchivo.addSeparator();
+        //opcion Alarma
+        JMenuItem opcionAlarma = new JMenuItem("Alarma", 'A');
+        opcionAlarma.addActionListener(this);
+        opcionAlarma.setActionCommand("Alarma");
+        menuArchivo.add(opcionAlarma);
+
+        menuBar.add(menuArchivo);
+        setJMenuBar(menuBar);
+        status = new JLabel("Status", JLabel.LEFT);
+        status.setBackground(Color.WHITE);
+        clockPanel = new AnalogClockPanel(status);
+        getContentPane().add(clockPanel, BorderLayout.CENTER);
+        //Agregar barra de estado
+        getContentPane().add(status, BorderLayout.SOUTH);
+
+        menuArchivo.addMenuListener(new MenuListener() {
+            @Override
+            public void menuSelected(MenuEvent e) {
+                clockPanel.setStop(true);
+            }
+
+            @Override
+            public void menuDeselected(MenuEvent e) {
+                clockPanel.setStop(false);
+            }
+
+            @Override
+            public void menuCanceled(MenuEvent e) {
+                clockPanel.setStop(false);
+            }
+        });
+
+        //Agregar zona grafica
+        ready = true;
     }
 
     @Override
-    public void paint(Graphics g) {
-        if (backGround == null){
-            backGround = createImage(getWidth(), getHeight());
-            Graphics gBackGround = backGround.getGraphics();
-            gBackGround.setClip(0,0, getWidth(), getHeight());
-            gBackGround.drawOval((getWidth() - 100) / 2, (getHeight() - 100) / 2, 100, 100);
+    public void actionPerformed(ActionEvent e) {
+        String command = e.getActionCommand();
+        System.out.println(command);
+        if ("Nuevo".equals(command)) {
+
+        } else if ("Alarma".equals(command)) {
+            System.out.println("alarma pai");
+            clockPanel.setEditing(true);
         }
-        update(g);
-    }
-
-    @Override
-    public void update(Graphics g) {
-        g.setClip(0,0,getWidth(), getHeight());
-        LocalDateTime time = LocalDateTime.now();
-        if(time.getHour() != hour) {
-            hour = time.getHour();
-
-            bufferHour = createImage(getWidth(), getHeight());
-            Graphics gBuffer = bufferHour.getGraphics();
-            gBuffer.setClip(0,0, getWidth(), getHeight());
-            gBuffer.drawImage(backGround, 0, 0, this);
-            gBuffer.fillArc((getWidth() - 90) / 2 + 5, (getHeight() - 90) / 2 + 5, 80, 80, angle12(hour),6);
-        }
-        if (time.getMinute() != min){
-            min = time.getMinute();
-
-            bufferMin = createImage(getWidth(), getHeight());
-            Graphics gBuffer = bufferMin.getGraphics();
-            gBuffer.setClip(0,0, getWidth(), getHeight());
-            gBuffer.drawImage(bufferHour, 0, 0, this);
-            gBuffer.fillArc((getWidth() - 100) / 2 + 5, (getHeight() - 100) / 2 + 5, 90, 90, angle60(min),4);
-        }
-        g.drawImage(bufferMin, 0, 0, this);
-        sec = time.getSecond();
-        g.fillArc((getWidth() - 100) / 2 + 5, (getHeight() - 100) / 2 + 5, 90, 90, angle60(sec),2);
-    }
-
-    private static int angle12(int hora) {
-        return 90 + hora * -30;
-    }
-
-    private static int angle60(int hora) {
-        return 90 + hora * -6;
     }
 }
