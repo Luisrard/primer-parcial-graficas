@@ -1,5 +1,7 @@
 package com.luisrard.primer.parcial.graficas;
 
+import java.util.Objects;
+
 public class TimeData {
     private int millis;
     private int sec;
@@ -11,6 +13,19 @@ public class TimeData {
         this.min = min;
         this.hour = hour;
         this.millis = millis;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        TimeData timeData = (TimeData) o;
+        return sec == timeData.sec && min == timeData.min && hour == timeData.hour;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sec, min, hour);
     }
 
     public TimeData() {

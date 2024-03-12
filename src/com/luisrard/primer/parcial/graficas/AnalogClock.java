@@ -8,6 +8,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class AnalogClock extends JFrame implements Runnable, ActionListener {
+    public static final int height = 520;
+    public static final int width = 480;
     private final JLabel status;
     private boolean ready = false;
     private AnalogClockPanel clockPanel;
@@ -19,9 +21,6 @@ public class AnalogClock extends JFrame implements Runnable, ActionListener {
 
     @Override
     public void run() {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException ignored) {}
         while (true){
             try {
                 Thread.sleep(1);
@@ -40,13 +39,12 @@ public class AnalogClock extends JFrame implements Runnable, ActionListener {
         super("Little Clock");
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setResizable(false);
-        setSize(480,520);
-        setVisible(true);
+        setSize(width, height);
 
         JMenuBar menuBar = new JMenuBar();
         //menu Modificar
         JMenu menuArchivo = new JMenu("Modificar");
-
+        menuArchivo.setMnemonic('M');
         //opcion Nuevo
         JMenuItem opcionNuevo = new JMenuItem("Nuevo", 'N');
         opcionNuevo.addActionListener(this);
@@ -65,6 +63,7 @@ public class AnalogClock extends JFrame implements Runnable, ActionListener {
         status = new JLabel("Status", JLabel.LEFT);
         status.setBackground(Color.WHITE);
         clockPanel = new AnalogClockPanel(status);
+
         getContentPane().add(clockPanel, BorderLayout.CENTER);
         //Agregar barra de estado
         getContentPane().add(status, BorderLayout.SOUTH);
@@ -86,6 +85,7 @@ public class AnalogClock extends JFrame implements Runnable, ActionListener {
             }
         });
 
+        setVisible(true);
         //Agregar zona grafica
         ready = true;
     }
@@ -93,11 +93,9 @@ public class AnalogClock extends JFrame implements Runnable, ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         String command = e.getActionCommand();
-        System.out.println(command);
         if ("Nuevo".equals(command)) {
-
+            clockPanel.resetAlarm();
         } else if ("Alarma".equals(command)) {
-            System.out.println("alarma pai");
             clockPanel.setEditing(true);
         }
     }

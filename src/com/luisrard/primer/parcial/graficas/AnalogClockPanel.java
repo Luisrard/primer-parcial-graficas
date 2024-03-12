@@ -13,14 +13,16 @@ import java.util.Calendar;
 
 //TODO: Move the alarm backwards and play the alarm sound
 public class AnalogClockPanel extends JPanel implements MouseMotionListener, MouseListener{
+    private final SoundPlayer ringPlayer;
+    private final SoundPlayer tiktakPlayer;
     private Image backGround;
     private Image bufferMin;
     private Image bufferHour;
     private JLabel status;
     private boolean changeSec, changeMin, changeHour;
     private final TimeData timeData = new TimeData(-200,-20,-20, -100);
-    private final TimeData newTimeData = new TimeData(-1,-1,-1, -1);
-    private final TimeData prevNewTimeData = new TimeData(-1,-1,-1, -1);
+    private final TimeData alarmTimeData = new TimeData(-1,-1,-1, -1);
+    private final TimeData prevTimeData = new TimeData(-1,-1,-1, -1);
     private int prevMinHandChange = -20;
     private int prevHourHandChange = -20;
     private int startAngleSec;
@@ -50,6 +52,9 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
 
     public AnalogClockPanel(final JLabel status) {
         this.status = status;
+        ringPlayer = new SoundPlayer("ring.wav", true);
+        tiktakPlayer = new SoundPlayer("tiktak.wav", true);
+        tiktakPlayer.playSound();
         addMouseMotionListener(this);
         addMouseListener(this);
     }
@@ -71,7 +76,7 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
         updateWorkArea();
     }
     private void updateWorkArea(){
-        if (!stop & !editing & !rEditing){
+        if (!stop & (!editing || !rEditing)){
             Graphics g = getGraphics();
             Calendar time = Calendar.getInstance();
             calculateOffsets(time);
@@ -81,7 +86,7 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
                 gBuffer.setColor(Color.RED);
                 gBuffer.setClip(0,0, getWidth(), getHeight());
                 gBuffer.drawImage(backGround, 0, 0, this);
-                gBuffer.fillArc((getWidth() - 150) / 2 + 5, (getHeight() - 150) / 2 + 40, 140, 140, angle12(timeData.getHour(), prevHourHandChange / 2),6);
+                gBuffer.fillArc((getWidth() - 150) / 2 + 7, (getHeight() - 150) / 2 + 45, 140, 140, angle12(timeData.getHour(), prevHourHandChange / 2),6);
                 changeHour = false;
             }
             if (changeMin){
@@ -89,27 +94,39 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
                 Graphics gBuffer = bufferMin.getGraphics();
                 gBuffer.setClip(0,0, getWidth(), getHeight());
                 gBuffer.drawImage(bufferHour, 0, 0, this);
-                gBuffer.fillArc((getWidth() - 180) / 2 + 5, (getHeight() - 180) / 2 + 40, 170, 170, angle60(timeData.getMin(), prevMinHandChange / 10),5);
+                gBuffer.fillArc((getWidth() - 180) / 2 + 7, (getHeight() - 180) / 2 + 45, 170, 170, angle60(timeData.getMin(), prevMinHandChange / 10),5);
                 changeMin = false;
             }
             if (changeSec){
+                if (timeData.equals(alarmTimeData)){
+                    startRinging();
+                }
                 g.setClip(0,0,getWidth(), getHeight());
                 g.setColor(Color.ORANGE);
                 g.drawImage(bufferMin, 0, 0, this);
                 startAngleSec = angle60(timeData.getSec(), timeData.getMillis() / 166);
-                System.out.println(startAngleSec);
-                g.fillArc((getWidth() - 210) / 2 + 5, (getHeight() - 210) / 2 + 40, 200, 200, startAngleSec,4);
+                g.fillArc((getWidth() - 210) / 2 + 7, (getHeight() - 210) / 2 + 45, 200, 200, startAngleSec,4);
                 printHour();
                 changeSec = false;
-            }
-            if (editing){
-                rEditing = true;
             }
         }
     }
 
+    private void startRinging() {
+        if (!ringing) {
+            ringing = true;
+            ringPlayer.playSound();
+            System.out.println("RINGGGGG");
+            System.out.println("RINGGGGG");
+        }
+    }
+
     private void printHour() {
-        status.setText(timeData.toString());
+        if (alarmTimeData.getHour() != -1){
+            status.setText(timeData.toString() + ", alarm " + alarmTimeData);
+        } else {
+            status.setText(timeData.toString());
+        }
     }
 
     private void calculateOffsets(Calendar time){
@@ -157,6 +174,8 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
     @Override
     public void mouseDragged(MouseEvent e) {
         if(editing) {
+            tiktakPlayer.stopSound();
+            rEditing = true;
             boolean up;
             int y = (262) - e.getY();
 
@@ -192,12 +211,14 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
             }else{
                 startAngleSecOrigin = startAngleSec;
             }
-        }else if (prevDegree >= 180 && degrees < 90){
-            totalSpins += 1;
-        } else if (prevDegree <= 180 && degrees > 270){
-            totalSpins -= 1 ;
         }
         if (prevDegree > degrees + 5 || prevDegree < degrees - 5){
+            if (prevDegree < 270 && prevDegree > 90 && degrees < 90){
+                totalSpins += 1;
+            }else if ((prevDegree > 270 || prevDegree < 90) && degrees > 90 && degrees < 180){
+                totalSpins -= 1 ;
+            }
+
             prevDegree = degrees;
             calculateNewTime();
             moveClock();
@@ -210,7 +231,7 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
 
         newSec += originAngleToSeconds((int) prevDegree);
 
-        int piv = 0;
+        int piv;
         if (newSec >= 60){
             piv = newSec % 60;
             newMin += newSec / 60;
@@ -240,34 +261,32 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
             }
         }
 
-        newTimeData.setHour(newHour);
-        newTimeData.setMin(newMin);
-        newTimeData.setSec(newSec);
-
-        System.out.println(newTimeData);
+        alarmTimeData.setHour(newHour);
+        alarmTimeData.setMin(newMin);
+        alarmTimeData.setSec(newSec);
     }
 
 
     private void moveClock() {
         Graphics g = getGraphics();
-        if (prevNewTimeData.getHour() != newTimeData.getHour()){
-            prevNewTimeData.setHour(newTimeData.getHour());
+        if (prevTimeData.getHour() != alarmTimeData.getHour()){
+            prevTimeData.setHour(alarmTimeData.getHour());
 
             bufferHour = createImage(getWidth(), getHeight());
             Graphics gBuffer = bufferHour.getGraphics();
             gBuffer.setColor(Color.RED);
             gBuffer.setClip(0, 0, getWidth(), getHeight());
             gBuffer.drawImage(backGround, 0, 0, this);
-            gBuffer.fillArc((getWidth() - 150) / 2 + 5, (getHeight() - 150) / 2 + 40, 140, 140, angle12(newTimeData.getHour(),0 ), 6);
+            gBuffer.fillArc((getWidth() - 150) / 2 + 5, (getHeight() - 150) / 2 + 40, 140, 140, angle12(alarmTimeData.getHour(),0 ), 6);
         }
-        if (prevNewTimeData.getMin() != newTimeData.getMin()){
-            prevNewTimeData.setMin(newTimeData.getMin());
+        if (prevTimeData.getMin() != alarmTimeData.getMin()){
+            prevTimeData.setMin(alarmTimeData.getMin());
 
             bufferMin = createImage(getWidth(), getHeight());
             Graphics gBuffer = bufferMin.getGraphics();
             gBuffer.setClip(0, 0, getWidth(), getHeight());
             gBuffer.drawImage(bufferHour, 0, 0, this);
-            gBuffer.fillArc((getWidth() - 180) / 2 + 5, (getHeight() - 180) / 2 + 40, 170, 170, angle60(newTimeData.getMin(), 0), 5);
+            gBuffer.fillArc((getWidth() - 180) / 2 + 5, (getHeight() - 180) / 2 + 40, 170, 170, angle60(alarmTimeData.getMin(), 0), 5);
         }
 
         g.setClip(0,0,getWidth(), getHeight());
@@ -277,6 +296,12 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
         printHour();
     }
 
+    public void resetAlarm(){
+        alarmTimeData.setHour(-1);
+        alarmTimeData.setMin(-1);
+        alarmTimeData.setSec(-1);
+    }
+
     @Override
     public void mouseMoved(MouseEvent e) {
     }
@@ -284,8 +309,13 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
     @Override
     public void mouseClicked(MouseEvent e) {
         if (ringing){
-            System.out.println("Parar el reloj");
+            stopRinging();
         }
+    }
+
+    private void stopRinging() {
+        ringPlayer.stopSound();
+        ringing = false;
     }
 
     @Override
@@ -295,8 +325,7 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        if (editing){
-            System.out.println("Me soltaron");
+        if (editing) {
             resetEditValues();
         }
     }
@@ -309,10 +338,11 @@ public class AnalogClockPanel extends JPanel implements MouseMotionListener, Mou
         timeData.setSec(-20);
         timeData.setMin(-20);
         timeData.setHour(-100);
+        prevTimeData.setSec(-1);
+        prevTimeData.setMin(-1);
+        prevTimeData.setHour(-1);
         rEditing = false;
-        newTimeData.setSec(-1);
-        newTimeData.setMin(-1);
-        newTimeData.setHour(-1);
+        tiktakPlayer.playSound();
     }
 
     @Override
